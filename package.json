@@ -11,5 +11,8 @@
     "url": "git://github.com/rulemotion/db-test.git"
   },
   "author": "",
-  "license": "BSD"
+  "license": "BSD",
+  "dependencies": {
+    "pg": "~0.8.4"
+  }
 }
