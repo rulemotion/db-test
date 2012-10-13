@@ -5,9 +5,26 @@ var block = 1000
 
 var pg = require('pg')
 
-function log (s) {
+var format = require('util').format
+
+function log () {
   console.log.apply(console, arguments)
-  return s
+  return format.apply(this, arguments)
+}
+
+log.write = function () {
+  if (!log.output) {
+    log.output = {}
+    log.file = log.file || 'out'
+    log.output.stream = 
+      require('fs')
+      .createWriteStream(process.cwd() + '/' + log.file, {
+        flags: 'a+'
+      , encoding: 'utf8'
+      })
+  }
+  var output = log.apply(this, arguments)
+  log.output.stream.write(output + '\n')
 }
 
 function argv (s, desc, fn) {
@@ -56,6 +73,7 @@ client.connect()
 
 argv('total', 'target total rows', function (n) { total = n })
 argv('block', 'block size in rows', function (n) { block = n })
+argv('output', 'output file', function (s) { log.file = s })
 argv('drop', 'drop table', function () { client.query(log("DROP TABLE IF EXISTS items CASCADE")) })
 argv('help', 'usage:', function () { console.error(argv.help), process.exit() })
 
@@ -70,7 +88,7 @@ client.on('drain', function () {
 
   pieceBefore = Date.now()
 
-  console.log(
+  log.write(
       '%dM written - %sK writes in %ss, %dms per write'
     , ((total - (pieces * block)) / 1000 / 1000).toFixed(3)
     , block / 1000
