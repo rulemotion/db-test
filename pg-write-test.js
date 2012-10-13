@@ -5,6 +5,11 @@ var block = 1000
 
 var pg = require('pg')
 
+function log (s) {
+  console.log.apply(console, arguments)
+  return s
+}
+
 function argv (s, desc, fn) {
   var n = 2
   while (n < process.argv.length + 1) {
@@ -51,7 +56,7 @@ client.connect()
 
 argv('total', 'target total rows', function (n) { total = n })
 argv('block', 'block size in rows', function (n) { block = n })
-argv('drop', 'drop table', function () { client.query("DROP TABLE IF EXISTS items CASCADE") })
+argv('drop', 'drop table', function () { client.query(log("DROP TABLE IF EXISTS items CASCADE")) })
 argv('help', 'usage:', function () { console.error(argv.help), process.exit() })
 
 var count = total
@@ -82,23 +87,20 @@ client.on('drain', function () {
   }
 })
 
-console.log('creating table if not exists')
-
-client.query(
+client.query(log(
     "CREATE TABLE IF NOT EXISTS"
   + " items(id SERIAL, slide_id INTEGER, pod_id INTEGER, play_time TIMESTAMPTZ, duration INTEGER)"
-)
+))
 
-var query = client.query("SELECT COUNT(*) FROM items")
+var query = client.query(log("SELECT COUNT(*) FROM items"))
 
 query.once('row', function (row) {
   if ('count' in row) {
     if (!row.count) {
-      console.log('creating index')
-      client.query("CREATE INDEX play_time_idx ON items(play_time)")
+      client.query(log("CREATE INDEX play_time_idx ON items(play_time)"))
     }
     pieces -= row.count / block
-    console.log("inserting %dM rows", pieces * block / 1000 / 1000)
+    console.log('inserting %dM rows', pieces * block / 1000 / 1000)
     insert()
   }
   else {
