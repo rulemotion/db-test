@@ -21,7 +21,7 @@ argv('total', 'target total rows', function (n) { total = n })
 argv('block', 'block size in rows', function (n) { block = n })
 argv('output', 'output file', function (s) { log.file = s })
 argv('clear', 'clear table', function () { db.clear() })
-argv('help', 'usage:', function () { console.error(argv.help), process.exit() })
+argv('help', 'usage:', function () { log.error(argv.help), process.exit() })
 
 var count = total
 var pieces = count / block
@@ -33,9 +33,10 @@ db.prepare()
 
 db.length(function (cnt) {
   count = cnt
-  pieces -= cnt / block
+  pieces -= Math.ceil(cnt / block)
 
-  console.log('inserting %dM rows', pieces * block / 1000 / 1000)
+  log('current number of rows: %d', cnt)
+  log('inserting %dM rows', pieces * block / 1000 / 1000)
 
   db.insert(block, function tick () {
     pieceTimer.tick()
@@ -48,12 +49,12 @@ db.length(function (cnt) {
       , pieceTimer.diff / block
     )
 
-    if (--pieces) {
+    if (--pieces >= 0) {
       db.insert(block, tick)
     }
     else {
-      console.log('done inserting')
-      console.log('it took %d seconds', totalTimer.tick() / 1000)
+      log('done inserting')
+      log('it took %d seconds', totalTimer.tick() / 1000)
       db.close()
     }
   })

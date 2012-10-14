@@ -44,7 +44,7 @@ Db.prototype.length = function (fn) {
       fn(row.count)
     }
     else {
-      console.log('unexpected response', row)
+      log('unexpected response', row)
       fn(0)
     }
   })

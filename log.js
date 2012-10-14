@@ -6,6 +6,11 @@ module.exports = function () {
     return format.apply(this, arguments)
   }
 
+  log.error = function () {
+    console.error.apply(console, arguments)
+    return format.apply(this, arguments)
+  }
+
   log.write = function () {
     if (!log.output) {
       log.output = {}
