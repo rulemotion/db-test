@@ -29,32 +29,32 @@ var pieces = count / block
 var totalTimer = new Timer()
 var pieceTimer = new Timer()
 
-db.on('drain', function () {
-  pieceTimer.tick()
-
-  log.write(
-      '%dM written - %sK writes in %ss, %dms per write'
-    , ((total - (pieces * block)) / 1000 / 1000).toFixed(3)
-    , block / 1000
-    , (pieceTimer.diff / 1000).toFixed(1)
-    , pieceTimer.diff / block
-  )
-
-  if (--pieces) {
-    db.insert(block)
-  }
-  else {
-    console.log('done inserting')
-    console.log('it took %d seconds', totalTimer.tick() / 1000)
-    db.close()
-  }
-})
-
 db.prepare()
 
 db.length(function (cnt) {
   count = cnt
   pieces -= cnt / block
+
   console.log('inserting %dM rows', pieces * block / 1000 / 1000)
-  db.insert(block)
+
+  db.insert(block, function tick () {
+    pieceTimer.tick()
+
+    log.write(
+        '%dM written - %sK writes in %ss, %dms per write'
+      , ((total - (pieces * block)) / 1000 / 1000).toFixed(3)
+      , block / 1000
+      , (pieceTimer.diff / 1000).toFixed(1)
+      , pieceTimer.diff / block
+    )
+
+    if (--pieces) {
+      db.insert(block, tick)
+    }
+    else {
+      console.log('done inserting')
+      console.log('it took %d seconds', totalTimer.tick() / 1000)
+      db.close()
+    }
+  })
 })

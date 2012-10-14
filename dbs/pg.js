@@ -1,19 +1,13 @@
-var EventEmitter = require('events').EventEmitter
 var log = require('../log')()
-
 var pg = require('pg')
 
 module.exports = function () {
-  var db = new Db(new pg.Client('tcp://postgres:1234@localhost:5432/postgres'))
-  db.client.on('drain', function () { db.emit('drain') })
-  return db
+  return new Db(new pg.Client('tcp://postgres:1234@localhost:5432/postgres'))
 }
 
 function Db (client) {
   this.client = client
 }
-
-require('util').inherits(Db, EventEmitter)
 
 Db.prototype.connect = function () {
   this.client.connect()
@@ -57,8 +51,9 @@ Db.prototype.length = function (fn) {
   return this
 }
 
-Db.prototype.insert = function (block) {
+Db.prototype.insert = function (block, fn) {
   var client = this.client
+  client.once('drain', fn)
   for(var i = 0; i < block; i++) {
     client.query({
       name: 'insert',
