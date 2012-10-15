@@ -1,59 +1,69 @@
 var log = require('../log')()
 var pg = require('pg')
 
-module.exports = function () {
-  return new Db(new pg.Client('tcp://postgres:1234@localhost:5432/postgres'))
+module.exports = Db
+
+function Db () {
+  if (!(this instanceof Db)) return new Db()
 }
 
-function Db (client) {
-  this.client = client
-}
-
-Db.prototype.connect = function () {
-  this.client.connect()
+Db.prototype.connect = function (cb) {
+  pg.connect('tcp://postgres:1234@localhost:5432/postgres', function (err, client) {
+    if (err) return cb(err)
+    client = new Client(client)
+    cb(null, client)
+  })
   return this
 }
 
-Db.prototype.close = function () {
+function Client (client) {
+  this.client = client
+}
+
+Client.prototype.close = function () {
   this.client.end()
   return this
 }
 
-Db.prototype.clear = function () {
-  this.client.query(log("DROP TABLE IF EXISTS items CASCADE"))
+Client.prototype.clear = function (cb) {
+  this.client.query(log("DROP TABLE IF EXISTS items CASCADE"), cb)
   return this
 }
 
-Db.prototype.prepare = function () {
+Client.prototype.prepare = function (cb) {
   this.client.query(log(
       "CREATE TABLE IF NOT EXISTS"
     + " items(id SERIAL, slide_id INTEGER, pod_id INTEGER, play_time TIMESTAMPTZ, duration INTEGER)"
-  ))
+  ), cb)
   return this
 }
 
-Db.prototype.length = function (fn) {
+Client.prototype.length = function (cb) {
   var client = this.client
-  var query = client.query(log("SELECT COUNT(*) FROM items"))
-  query.once('row', function (row) {
+  client.query(log("SELECT COUNT(*) FROM items"), function (err, result) {
+    if (err) return cb(err)
+    var row = result.rows[0]
     if ('count' in row) {
       if (!row.count) {
         row.count = 0
-        client.query(log("CREATE INDEX play_time_idx ON items(play_time)"))
+        client.query(log("CREATE INDEX play_time_idx ON items(play_time)"), function (err) {
+          if (err) return cb(err)
+          cb(null, row.count)
+        })
       }
-      fn(row.count)
+      else cb(null, row.count)
     }
     else {
       log('unexpected response', row)
-      fn(0)
+      cb(null, 0)
     }
   })
   return this
 }
 
-Db.prototype.insert = function (block, fn) {
+Client.prototype.insert = function (block, cb) {
   var client = this.client
-  client.once('drain', fn)
+  client.once('drain', cb)
   for(var i = 0; i < block; i++) {
     client.query({
       name: 'insert',

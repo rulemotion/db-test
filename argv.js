@@ -22,4 +22,5 @@ function argv (s, desc, fn) {
     : ''
   argv.help = argv.help || ''
   argv.help += '\n  --' + s + ' ' + args + '\t\t' + desc
+  return argv[s]
 }
