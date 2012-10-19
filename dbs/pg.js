@@ -63,14 +63,28 @@ Client.prototype.length = function (cb) {
 
 Client.prototype.insert = function (block, cb) {
   var client = this.client
-  client.once('drain', cb)
+  var count = block
+  var erred = false
+
   for(var i = 0; i < block; i++) {
     client.query({
       name: 'insert',
       text: "INSERT INTO items(slide_id, pod_id, play_time, duration) VALUES($1, $2, $3, $4)",
       values: [rand(10000), rand(500), new Date(), rand(10)]
+    }, function (err) {
+      if (erred) return
+      
+      if (err) {
+        erred = true
+        return cb(err)
+      }
+
+      if (!--count) {
+        cb(null, block)
+      }
     })
   }
+
   return this
 }
 
