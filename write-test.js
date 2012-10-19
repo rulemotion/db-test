@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var defaultdb = 'pg'
+var defaultdb = 'redis'
 var total = 1000000000
-var block = 1000
+var block = 10000
 
 var argv = require('./argv')
 var log = require('./log')()
